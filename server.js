@@ -1,8 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const bcryptjs = require('bcryptjs');
 const AfricasTalking = require('africastalking')
 require('dotenv').config()
 const app = express();
+const User = require('./models/usermodel')
 const Document = require('./models/documentmodel');
 const connectDb = require('./dbConnection/connection');
 
@@ -27,6 +29,39 @@ app.get("/documents",async()=>{
       }
 })
 
+app.post('/users', async (req, res) => {
+    try {
+      const { username, phoneNumber, password } = req.body;
+  
+      if (!username || !phoneNumber || !password) {
+        return res.status(400).json({ error: 'Please fill all fields' });
+      }
+      const editNumber = phoneNumber.substring(1);
+      // Check if user already exists
+      const user = await User.findOne({ phoneNumber });
+  
+      if (user) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
+  
+      // Hash the password
+      const salt = await bcryptjs.genSalt(10);
+      const hashedPassword = await bcryptjs.hash(password, salt);
+      const newNumber =`254${editNumber}`
+      // Save the new user
+      const newUser = new User({
+        username,
+        phoneNumber:newNumber,
+        password: hashedPassword,
+      });
+      const savedUser = await newUser.save();
+  
+      res.status(201).json({ message: 'User registered successfully', user: savedUser });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
 // USSD route
 app.post('/ussd',async (req, res) => {
   const sessionId = req.body.sessionId;
