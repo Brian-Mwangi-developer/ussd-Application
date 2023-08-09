@@ -3,8 +3,10 @@ const bodyParser = require('body-parser');
 const AfricasTalking = require('africastalking')
 require('dotenv').config()
 const app = express();
+const Document = require('./models/documentmodel');
+const connectDb = require('./dbConnection/connection');
 
-
+connectDb()
 //Initialize Africa's talking
 const africastalking = AfricasTalking({
     apiKey:process.env.API_KEY,
@@ -13,6 +15,17 @@ const africastalking = AfricasTalking({
 
 // Configure middleware
 app.use(bodyParser.urlencoded({ extended: true }));
+
+
+app.get("/documents",async()=>{
+    try {
+        const documents = await Document.find().sort({ creationDate: -1 });
+        res.json(documents);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+      }
+})
 
 // USSD route
 app.post('/ussd',async (req, res) => {
